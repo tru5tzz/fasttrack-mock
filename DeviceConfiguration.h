@@ -86,21 +86,12 @@ void DCD_decode(void);
 
 void DCD_decode_element(tsDCD_Elem *pElem, tsDCD_ElemContent *pDest);
 
-void handle_dcd_config(sl_btmesh_msg_t *evt);
+uint8_t device_configuration_config_session (uint16_t target);
 
-// DCD content of the last provisioned device. (the example code decodes up to two elements, but
-// only the primary element is used in the configuration to simplify the code)
-//extern tsDCD_ElemContent _sDCD_Prim;
-//extern tsDCD_ElemContent _sDCD_2nd; /* second DCD element is decoded if present, but not used for anything (just informative) */
-
-// Extern the new elements table
-extern tsDCD_ElemContent _sDCD_Table[MAX_ELEMS_PER_DEV];
+void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt);
 
 // Defines to avoid old code confict with elements table change.
 #define _sDCD_Prim _sDCD_Table[0]
 #define _sDCD_2nd  _sDCD_Table[1]
-
-extern uint8_t _dcd_raw[256]; // raw content of the DCD received from remote node
-extern uint8_t _dcd_raw_len;
 
 #endif
