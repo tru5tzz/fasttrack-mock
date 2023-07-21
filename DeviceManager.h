@@ -32,7 +32,7 @@ uint8_t device_manager_add_device (uuid_128 *devUUID, bd_addr *devAddr);
  * @param devAddr The 128-bit UUID of the device
  * @return int Status code defined above
  */
-uint8_t device_manager_remove_device (bd_addr *devAddr);
+uint8_t device_manager_remove_device (const bd_addr *devAddr);
 
 /**
  * @brief Get the next item in the device table

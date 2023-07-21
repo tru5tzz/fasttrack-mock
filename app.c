@@ -83,10 +83,6 @@ SL_WEAK void app_init(void)
   sl_sleeptimer_delay_millisecond(1);
 
   device_manager_init();
-
-  uint8_t dev_num;
-  device_manager_get_device_count(&dev_num);
-  app_log("Current devices in table %d\n", dev_num);
 }
 
 /**************************************************************************//**
@@ -169,6 +165,8 @@ void sl_bt_on_event(struct sl_bt_msg *evt)
   }
 }
 
+
+static uint16_t provisionee_addr;
 /**************************************************************************//**
  * Bluetooth Mesh stack event handler.
  * This overrides the dummy weak implementation.
@@ -178,9 +176,9 @@ void sl_bt_on_event(struct sl_bt_msg *evt)
 void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
 {
   uint16_t result = 0;
-  uint16_t provisionee_addr;
   uuid_128 provisionee_uuid;
   sl_status_t sc;
+  bd_addr ble_address;
 
   switch (SL_BT_MSG_ID(evt->header)) {
     ///////////////////////////////////////////////////////////////////////////
@@ -243,9 +241,6 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
       if(0 == evt->data.evt_prov_unprov_beacon.bearer) {
         uuid_128 temp_id = evt->data.evt_prov_unprov_beacon.uuid;
         bd_addr temp_add = evt->data.evt_prov_unprov_beacon.address;
-        uint8_t temp_count;
-        device_manager_get_device_count(&temp_count);
-        app_log("Before adding new device to the table, it has %d device\n", temp_count);
         /* fill up btmesh device struct */
         if( (sl_btmesh_prov_get_ddb_entry(temp_id, NULL, NULL, NULL, NULL) != 0)) {
           /* Device is not present */
@@ -263,8 +258,6 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
               app_log("%x", temp_id.data[i]);
             }
             app_log("\n");
-            device_manager_get_device_count(&temp_count);
-            app_log("After adding 1 dev, now it has %d devices\n", temp_count);
           }
         }
       }
@@ -282,6 +275,14 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
       for (uint8_t i = 0; i < BLE_MESH_UUID_LEN_BYTE; i++) app_log("%02X", provisionee_uuid.data[i]);
       app_log("\r\n");
 
+      // Delete the device from the DeviceManager Table
+      sc = device_manager_remove_device(&provisionee_addr);
+      if (sc == 0) {
+        app_log("Device removed from the table\n");
+      } else {
+        app_log("Error: device_manager_remove_device code %d\n", sc);
+      }
+
       app_log(" sending app key to node ...\r\n");
 
       sc = sl_btmesh_config_client_add_appkey(NETWORK_ID, provisionee_addr, APPKEY_INDEX, NETWORK_ID, NULL);
@@ -297,6 +298,9 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
         app_log(" appkey added\r\n");
       }
 
+      // Move to configuration step
+      sc = device_configuration_config_session(provisionee_addr);
+      app_assert_status_f(sc, "device_configuration_config_session\n");
       break;
     // -------------------------------
     // Default event handler.
@@ -304,6 +308,8 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
       app_log("unhandled evt: %8.8x class %2.2x method %2.2x\r\n", (unsigned int)SL_BT_MSG_ID(evt->header),
                                                                   (unsigned int)((SL_BT_MSG_ID(evt->header) >> 16) & 0xFF),
                                                                   (unsigned int)((SL_BT_MSG_ID(evt->header) >> 24) & 0xFF) );
+      // Call other event handler fucntion
+      device_config_handle_mesh_evt(evt);
       break;
   }
 }
@@ -327,7 +333,6 @@ void provisionBLEMeshStack_app(eMesh_Prov_Node_t eStrategy)
         sc = sl_btmesh_prov_provision_adv_device(temp_id);
         if (sc == SL_STATUS_OK) {
           app_log("Provisioning request sent\n");
-          device_manager_remove_device(&temp_add);
         } else {
           app_log("Provisioning fail %lX: ",sc);
         }

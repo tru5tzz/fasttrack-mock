@@ -148,10 +148,10 @@ void DCD_decode_element(tsDCD_Elem *pElem, tsDCD_ElemContent *pDest)
  * DCD of the target (this module will get this later)
  * Pub & sub address for each model (get from the network header)
  */
-uint16_t device_address;
+static uint16_t target_device_address = 0;
 
 // Always start with element 0
-uint8_t element_index = 0;
+static uint8_t element_index = 0;
 
 /**
  * @brief This function will initialize the variable needed for configuring the target device then start it
@@ -160,9 +160,10 @@ uint8_t element_index = 0;
  * @return uint8_t 
  */
 uint8_t device_configuration_config_session (uint16_t target) {
-  device_address = target;
+  target_device_address = target;
+  app_log("The target address is %2x\n", target_device_address);
 
-  return sl_btmesh_config_client_get_dcd(NETWORK_ID, device_address, 0, NULL);
+  return sl_btmesh_config_client_get_dcd(NETWORK_ID, target_device_address, 0, NULL);
 }
 
 /**
@@ -225,6 +226,7 @@ static void config_bind_add(uint16_t model_id, uint16_t vendor_id)
   _sConfig.num_bind++;
 }
 
+// TODO Make this fucntion more flexible in stead of hard-coding
 static void config_check()
 {
   uint8_t number_of_elem = 0;
@@ -281,7 +283,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
       model_id = _sConfig.bind_model[_sConfig.num_bind_done].model_id;
       vendor_id = _sConfig.bind_model[_sConfig.num_bind_done].vendor_id;
 
-      retval = sl_btmesh_config_client_bind_model(NETWORK_ID, device_address, element_index, vendor_id, model_id, APPKEY_INDEX, NULL);
+      retval = sl_btmesh_config_client_bind_model(NETWORK_ID, target_device_address, element_index, vendor_id, model_id, APPKEY_INDEX, NULL);
       // After gathering all the DCD data, start deploy app key to node
       /* sc = sl_btmesh_config_client_add_appkey(network_id, provisionee_addr, appkey_index, network_id, &handle);
       if (sc == SL_STATUS_OK) {
@@ -304,7 +306,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
 
           app_log("APP BIND, config %d/%d:: model %4.4x key index %x\r\n", _sConfig.num_bind_done+1, _sConfig.num_bind, model_id, APPKEY_INDEX);
 
-          retval = sl_btmesh_config_client_bind_model(NETWORK_ID, device_address, 0, vendor_id, model_id, APPKEY_INDEX, NULL);
+          retval = sl_btmesh_config_client_bind_model(NETWORK_ID, target_device_address, 0, vendor_id, model_id, APPKEY_INDEX, NULL);
           if (retval == SL_STATUS_OK) {
             app_log("Binding model 0x%4.4x\r\n", model_id);
           } else {
@@ -318,7 +320,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
 
           app_log("PUB SET, config %d/%d: model %4.4x -> address %4.4x\r\n", _sConfig.num_pub_done+1, _sConfig.num_pub, model_id, pub_address);
 
-          retval = sl_btmesh_config_client_set_model_pub(NETWORK_ID, device_address,
+          retval = sl_btmesh_config_client_set_model_pub(NETWORK_ID, target_device_address,
             0, /* element index */
             vendor_id,
             model_id,
@@ -354,7 +356,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
 
           app_log("PUB SET, config %d/%d: model %4.4x -> address %4.4x\r\n", _sConfig.num_pub_done+1, _sConfig.num_pub, model_id, pub_address);
 
-          retval = sl_btmesh_config_client_set_model_pub(NETWORK_ID, device_address,
+          retval = sl_btmesh_config_client_set_model_pub(NETWORK_ID, target_device_address,
             0, /* element index */
             vendor_id,
             model_id,
@@ -375,7 +377,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
 
           app_log("SUB ADD, config %d/%d: model %4.4x -> address %4.4x\r\n", _sConfig.num_sub_done+1, _sConfig.num_sub, model_id, sub_address);
 
-          retval = sl_btmesh_config_client_add_model_sub(NETWORK_ID, device_address, 0, vendor_id, model_id, sub_address, NULL);
+          retval = sl_btmesh_config_client_add_model_sub(NETWORK_ID, target_device_address, 0, vendor_id, model_id, sub_address, NULL);
 
           if (retval == SL_STATUS_OK) {
             app_log(" waiting sub ack\r\n");
@@ -399,7 +401,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
 
           app_log("SUB ADD, config %d/%d: model %4.4x -> address %4.4x\r\n", _sConfig.num_sub_done+1, _sConfig.num_sub, model_id, sub_address);
 
-          retval = sl_btmesh_config_client_add_model_sub(NETWORK_ID, device_address, 0, vendor_id, model_id, sub_address, NULL);
+          retval = sl_btmesh_config_client_add_model_sub(NETWORK_ID, target_device_address, 0, vendor_id, model_id, sub_address, NULL);
 
           if (retval == SL_STATUS_OK) {
             app_log(" waiting sub ack\r\n");
@@ -414,3 +416,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
       break;
   }
 }
+
+// NOTE I am considering adding one callback function
+// below to let the main program be able to do after the configuration process complete
+// Like proivsioning next device for example

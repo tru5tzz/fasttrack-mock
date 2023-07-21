@@ -30,7 +30,7 @@ void device_manager_init() {
  * 
  * @return If the device is present, return its current index in the table. If not, return 0
  */
-uint8_t __device_present(bd_addr *devAddr) {
+uint8_t __device_present(const bd_addr *devAddr) {
     for (int i = 0; i < MAX_PRESENT_DEVICE_NUMBER; i++) {
         if ((devAddr->addr[0] == manager_instance.device_table[i].add.addr[0])
             && (devAddr->addr[1] == manager_instance.device_table[i].add.addr[1])
@@ -39,7 +39,7 @@ uint8_t __device_present(bd_addr *devAddr) {
             && (devAddr->addr[4] == manager_instance.device_table[i].add.addr[4])
             && (devAddr->addr[5] == manager_instance.device_table[i].add.addr[5])
             && (manager_instance.device_table[i].lifetime > 0)) {
-                return DEVICE_MANAGER_DEVICE_PRESENTED;
+                return i + 1;
         }
     }
 
@@ -72,8 +72,8 @@ uint8_t device_manager_add_device (uuid_128 *devUUID, bd_addr *devAddr) {
     return DEVICE_MANAGER_TABLE_FLOW;
 }
 
-uint8_t device_manager_remove_device (bd_addr *devAddr) {
-    int device_index = __device_present(devAddr);
+uint8_t device_manager_remove_device (const bd_addr *devAddr) {
+    int device_index = __device_present(devAddr) - 1;
     if (device_index > 0) {
         manager_instance.device_table[device_index].lifetime = 0;
         manager_instance.present_devices--;
