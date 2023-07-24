@@ -38,4 +38,5 @@ sl_rail_util_pti_config.h=1862664786
 sl_simple_button_btn0_config.h=-1046945162
 sl_simple_button_btn1_config.h=1487514491
 sl_simple_button_config.h=362231615
+sl_simple_led_led0_config.h=862272308
 sl_sleeptimer_config.h=1360009810

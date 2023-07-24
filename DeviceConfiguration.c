@@ -149,6 +149,7 @@ void DCD_decode_element(tsDCD_Elem *pElem, tsDCD_ElemContent *pDest)
  * Pub & sub address for each model (get from the network header)
  */
 static uint16_t target_device_address = 0;
+static uint16_t target_group_address = 0;
 
 // Always start with element 0
 static uint8_t element_index = 0;
@@ -159,8 +160,9 @@ static uint8_t element_index = 0;
  * @param [in] target The network address of the target device
  * @return uint8_t 
  */
-uint8_t device_configuration_config_session (uint16_t target) {
-  target_device_address = target;
+uint8_t device_configuration_config_session (uint16_t target_device, uint16_t target_group) {
+  target_device_address = target_device;
+  target_group_address = target_group;
   app_log("The target address is %2x\n", target_device_address);
 
   return sl_btmesh_config_client_get_dcd(NETWORK_ID, target_device_address, 0, NULL);
@@ -230,7 +232,6 @@ static void config_bind_add(uint16_t model_id, uint16_t vendor_id)
 static void config_check()
 {
   uint8_t number_of_elem = 0;
-
   for (uint8_t i = 0; i < MAX_ELEMS_PER_DEV; i++) {
     if ((_sDCD_Table[i].numSIGModels > 0) || (_sDCD_Table[i].numVendorModels > 0)) {
       number_of_elem++;
@@ -242,12 +243,12 @@ static void config_check()
   for(int i = 0; i < number_of_elem; i++) {
     for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
       if(_sDCD_Table[i].SIG_models[j] == SWITCH_MODEL_ID) {
-      config_sub_add(SWITCH_MODEL_ID, 0xFFFF, LIGHT_GROUP_1);
-      config_pub_add(SWITCH_MODEL_ID, 0xFFFF, LIGHT_GROUP_1);
+      config_sub_add(SWITCH_MODEL_ID, 0xFFFF, target_group_address);
+      config_pub_add(SWITCH_MODEL_ID, 0xFFFF, target_group_address);
       config_bind_add(SWITCH_MODEL_ID, 0xFFFF);
       } else if(_sDCD_Table[i].SIG_models[j] == LIGHT_MODEL_ID) {
-      config_pub_add(LIGHT_MODEL_ID, 0xFFFF, LIGHT_GROUP_1);
-      config_sub_add(LIGHT_MODEL_ID, 0xFFFF, LIGHT_GROUP_1);
+      config_pub_add(LIGHT_MODEL_ID, 0xFFFF, target_group_address);
+      config_sub_add(LIGHT_MODEL_ID, 0xFFFF, target_group_address);
       config_bind_add(LIGHT_MODEL_ID, 0xFFFF);
       }
     }
@@ -408,6 +409,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
           }
         } else {
           app_log("***\r\nconfiguration complete\r\n***\r\n");
+          device_config_configuration_on_success_callback();
         }
       } else {
         app_log(" sub add failed with code %x\r\n", result);
@@ -420,3 +422,6 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
 // NOTE I am considering adding one callback function
 // below to let the main program be able to do after the configuration process complete
 // Like proivsioning next device for example
+SL_WEAK void device_config_configuration_on_success_callback() {
+
+}

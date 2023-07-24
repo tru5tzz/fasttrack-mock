@@ -24,6 +24,7 @@
 #include "sl_mpu.h"
 #include "nvm3_default.h"
 #include "sl_simple_button_instances.h"
+#include "sl_simple_led_instances.h"
 #include "sl_simple_timer.h"
 #include "sl_btmesh.h"
 #include "sl_iostream_init_instances.h"
@@ -51,6 +52,7 @@ void sl_driver_init(void)
   sl_debug_swo_init();
   GPIOINT_Init();
   sl_simple_button_init_instances();
+  sl_simple_led_init_instances();
   sl_cos_send_config();
 }
 

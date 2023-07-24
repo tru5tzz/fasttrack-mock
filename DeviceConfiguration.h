@@ -86,9 +86,17 @@ void DCD_decode(void);
 
 void DCD_decode_element(tsDCD_Elem *pElem, tsDCD_ElemContent *pDest);
 
-uint8_t device_configuration_config_session (uint16_t target);
+uint8_t device_configuration_config_session (uint16_t target, uint16_t target_group);
 
 void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt);
+
+/**
+ * @brief This is the prototype for the callback fucntion
+ * User should self-define it.
+ * This function will be called when the configuration press complete successfully
+ * 
+ */
+void device_config_configuration_on_success_callback();
 
 // Defines to avoid old code confict with elements table change.
 #define _sDCD_Prim _sDCD_Table[0]

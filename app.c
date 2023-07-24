@@ -53,19 +53,10 @@
 #include "NetworkConfiguration.h"
 #include "DeviceManager.h"
 
+#include "StatusIndicator.h"
 
 #define BLE_MESH_UUID_LEN_BYTE (16)
 #define BLE_ADDR_LEN_BYTE (6)
-
-/// Length of the display name buffer
-#define NAME_BUF_LEN                   20
-
-/// Increase step of physical values (lightness, color temperature)
-#define INCREASE                       10
-/// Decrease step of physical values (lightness, color temperature)
-#define DECREASE                       (-10)
-/// Used button index
-#define BUTTON_PRESS_BUTTON_0          0
 
 /**************************************************************************//**
  * Application Init.
@@ -165,8 +156,19 @@ void sl_bt_on_event(struct sl_bt_msg *evt)
   }
 }
 
-
+/**
+ * NOTE about the variable below
+ * I think this variable should be inside the sl_btmesh_on_event fucntion.
+ * However, this will make its value gone when finishing handling event.
+ * So I suggest one solution is that I put the variable insize the function,
+ * then I set the target_address for the device configureation module 
+ * right in the provisioned_id event.
+ * 
+ * After done add app key to the node, just send the trigger signal to
+ * the device configuration.
+ */
 static uint16_t provisionee_addr;
+static uint16_t target_group_address;
 /**************************************************************************//**
  * Bluetooth Mesh stack event handler.
  * This overrides the dummy weak implementation.
@@ -178,7 +180,6 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
   uint16_t result = 0;
   uuid_128 provisionee_uuid;
   sl_status_t sc;
-  bd_addr ble_address;
 
   switch (SL_BT_MSG_ID(evt->header)) {
     ///////////////////////////////////////////////////////////////////////////
@@ -275,6 +276,7 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
       for (uint8_t i = 0; i < BLE_MESH_UUID_LEN_BYTE; i++) app_log("%02X", provisionee_uuid.data[i]);
       app_log("\r\n");
 
+      // TODO The device_manager_remove_device needs a argument of bd_addr
       // Delete the device from the DeviceManager Table
       sc = device_manager_remove_device(&provisionee_addr);
       if (sc == 0) {
@@ -299,7 +301,7 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
       }
 
       // Move to configuration step
-      sc = device_configuration_config_session(provisionee_addr);
+      sc = device_configuration_config_session(provisionee_addr, target_group_address);
       app_assert_status_f(sc, "device_configuration_config_session\n");
       break;
     // -------------------------------
@@ -309,35 +311,53 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt)
                                                                   (unsigned int)((SL_BT_MSG_ID(evt->header) >> 16) & 0xFF),
                                                                   (unsigned int)((SL_BT_MSG_ID(evt->header) >> 24) & 0xFF) );
       // Call other event handler fucntion
-      device_config_handle_mesh_evt(evt);
       break;
   }
+
+  device_config_handle_mesh_evt(evt);
+  status_indicator_on_btmesh_event(evt);
 }
 
-void provisionBLEMeshStack_app(eMesh_Prov_Node_t eStrategy)
+/**
+ * NOTE 001 I am thinking of using the callback function
+ * to trigger a new provisioning process.
+ * This may cause the program a little bit confusing
+ * but it is the only way to prevent out of resources
+ * and data race condition in other module (due to using global variable)
+ * 
+ */
+
+/**
+ * NOTE 002 New idea:
+ * Change the provision function the only one mode (NEXT)
+ * Then if the button is long pressed, change to mode ALL
+ * by the variable recursive below.
+ * The callback function now check if this variable is higher
+ * than 0, if it is, it will call the provision function again.
+ * 
+ */
+static uint8_t recursive = 0;
+void provisionBLEMeshStack_app()
 {
   sl_status_t sc;
-  uint8_t current_devices_in_table;
   uuid_128 temp_id;
   bd_addr temp_add;
 
-  device_manager_get_device_count(&current_devices_in_table);
+  status_indicator_on_provisioning();
 
-  if(    ( eMESH_PROV_ALL == eStrategy )
-      || ( eMESH_PROV_NEXT == eStrategy )
-    ) {
-    for(uint8_t i = 0; i < current_devices_in_table; i++) {
-      if (device_manager_get_next_device(&temp_id, &temp_add) == 0) {
-        /* provisioning using ADV bearer (this is the default) */
-        sl_btmesh_prov_create_provisioning_session(NETWORK_ID, temp_id, 0);
-        sc = sl_btmesh_prov_provision_adv_device(temp_id);
-        if (sc == SL_STATUS_OK) {
-          app_log("Provisioning request sent\n");
-        } else {
-          app_log("Provisioning fail %lX: ",sc);
-        }
-      }
+  //FIXME - When there is no device left this function below should return value other than 0
+  if (device_manager_get_next_device(&temp_id, &temp_add) == 0) {
+    /* provisioning using ADV bearer (this is the default) */
+    sl_btmesh_prov_create_provisioning_session(NETWORK_ID, temp_id, 0);
+    sc = sl_btmesh_prov_provision_adv_device(temp_id);
+    if (sc == SL_STATUS_OK) {
+      app_log("Provisioning request sent\n");
+    } else {
+      app_log("Provisioning fail %lX: ",sc);
     }
+  } else {
+    app_log("No device left in the table\n");
+    recursive = 0;
   }
 }
 
@@ -347,19 +367,32 @@ sl_sleeptimer_timer_handle_t double_tap_timer;
  * While the double push button will be handled by the app_button_press_cb below
  */
 void double_tap_timer_on_timeout(sl_sleeptimer_timer_handle_t *timer, void *data) {
+  (void)timer;
+  (void)data;
+
   printf("Single push detected\n");
 }
 
 void app_button_press_cb(uint8_t button, uint8_t duration) {
-  sl_status_t retval;
   bool sleeptimer_running = false;
   app_log("Button %d pressed\n", button);
   switch (duration) {
     case APP_BUTTON_PRESS_DURATION_SHORT:
-      if (button == 1) {
-        retval = sl_btmesh_prov_list_ddb_entries(NULL);
-        app_assert_status_f(retval, "Query node database failed\n");
+      if (button == 0) {
+        target_group_address = LIGHT_GROUP_1;
+      } else if (button == 1) {
+        target_group_address = LIGHT_GROUP_2;
       }
+      provisionBLEMeshStack_app();
+      break;
+    case APP_BUTTON_PRESS_DURATION_LONG:
+      if (button == 0) {
+        target_group_address = LIGHT_GROUP_1;
+      } else if (button == 1) {
+        target_group_address = LIGHT_GROUP_2;
+      }
+      provisionBLEMeshStack_app();
+      recursive = 1;
       break;
     case APP_BUTTON_PRESS_DURATION_VERYLONG:
       sl_sleeptimer_is_timer_running(&double_tap_timer, &sleeptimer_running);
@@ -370,11 +403,14 @@ void app_button_press_cb(uint8_t button, uint8_t duration) {
         sl_sleeptimer_start_timer_ms(&double_tap_timer, 200, double_tap_timer_on_timeout, NULL, 0, SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
       }
       break;
-    case APP_BUTTON_PRESS_DURATION_LONG:
-      app_log("list unprovisioned devices\n");
-      provisionBLEMeshStack_app(eMESH_PROV_NEXT);
-      break;
     default:
       break;
+  }
+}
+
+
+void device_config_configuration_on_success_callback() {
+  if (recursive > 0) {
+    provisionBLEMeshStack_app();
   }
 }

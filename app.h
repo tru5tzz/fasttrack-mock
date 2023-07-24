@@ -4,12 +4,6 @@
 /* System header */
 #include <stdio.h>
 
-/* Provisioning strategy */
-typedef enum {
-  eMESH_PROV_ALL=0,
-  eMESH_PROV_NEXT
-} eMesh_Prov_Node_t;
-
 /***************************************************************************//**
  * Application Init.
  ******************************************************************************/
@@ -38,6 +32,6 @@ void initBLEMeshStack_app(void);
 void bkgndBLEMeshStack_app(void);
 
 /* provision list */
-void provisionBLEMeshStack_app(eMesh_Prov_Node_t eStrategy);
+void provisionBLEMeshStack_app();
 
 #endif // APP_H
