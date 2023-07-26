@@ -54,7 +54,8 @@ void DCD_decode(void);
 void DCD_decode_element(tsDCD_Elem *pElem, tsDCD_ElemContent *pDest);
 
 uint8_t device_configuration_config_session(uint16_t target,
-                                            uint16_t target_group);
+                                            uint16_t target_group,
+                                            uint8_t device_type);
 
 void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt);
 

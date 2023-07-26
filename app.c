@@ -24,9 +24,9 @@
 #define BLE_MESH_UUID_LEN_BYTE (16)
 #define BLE_ADDR_LEN_BYTE (6)
 
-/**************************************************************************/ /**
-                                                                              * Application Init.
-                                                                              *****************************************************************************/
+/**
+ * Application Init.
+ *****************************************************************************/
 SL_WEAK void app_init(void) {
   /////////////////////////////////////////////////////////////////////////////
   // Put your additional application init code here!                         //
@@ -41,9 +41,9 @@ SL_WEAK void app_init(void) {
   device_manager_init();
 }
 
-/**************************************************************************/ /**
-                                                                              * Application Process Action.
-                                                                              *****************************************************************************/
+/**
+ * Application Process Action.
+ *****************************************************************************/
 SL_WEAK void app_process_action(void) {
   /////////////////////////////////////////////////////////////////////////////
   // Put your additional application code here!                              //
@@ -52,11 +52,11 @@ SL_WEAK void app_process_action(void) {
   /////////////////////////////////////////////////////////////////////////////
 }
 
-/***************************************************************************/ /**
-                                                                               * Handles button press and does a factory reset
-                                                                               *
-                                                                               * @return true if there is no button press
-                                                                               ******************************************************************************/
+/**
+ * Handles button press and does a factory reset
+ *
+ * @return true if there is no button press
+ ******************************************************************************/
 bool handle_reset_conditions(void) {
   // If PB0 is held down then do full factory reset
   if (sl_simple_button_get_state(&sl_button_btn0) == SL_SIMPLE_BUTTON_PRESSED) {
@@ -68,11 +68,11 @@ bool handle_reset_conditions(void) {
   return true;
 }
 
-/***************************************************************************/ /**
-                                                                               * Handling of boot event.
-                                                                               * If needed it performs factory reset. In other case it sets device name
-                                                                               * and initialize mesh node.
-                                                                               ******************************************************************************/
+/**
+ * Handling of boot event.
+ * If needed it performs factory reset. In other case it sets device name
+ * and initialize mesh node.
+ ******************************************************************************/
 static void handle_boot_event(void) {
   sl_status_t sc;
   bd_addr address;
@@ -89,12 +89,12 @@ static void handle_boot_event(void) {
   }
 }
 
-/**************************************************************************/ /**
-                                                                              * Bluetooth stack event handler.
-                                                                              * This overrides the dummy weak implementation.
-                                                                              *
-                                                                              * @param[in] evt Event coming from the Bluetooth stack.
-                                                                              *****************************************************************************/
+/**
+ * Bluetooth stack event handler.
+ * This overrides the dummy weak implementation.
+ *
+ * @param[in] evt Event coming from the Bluetooth stack.
+ *****************************************************************************/
 void sl_bt_on_event(struct sl_bt_msg *evt) {
   switch (SL_BT_MSG_ID(evt->header)) {
     ///////////////////////////////////////////////////////////////////////////
@@ -130,12 +130,13 @@ void sl_bt_on_event(struct sl_bt_msg *evt) {
 static uint16_t provisionee_addr;
 static uint16_t target_group_address;
 static bd_addr provisioning_dev_address;
-/**************************************************************************/ /**
-                                                                              * Bluetooth Mesh stack event handler.
-                                                                              * This overrides the dummy weak implementation.
-                                                                              *
-                                                                              * @param[in] evt Event coming from the Bluetooth Mesh stack.
-                                                                              *****************************************************************************/
+static uint8_t device_type = TARGET_DEVICE_TYPE_NODE;
+/**
+ * Bluetooth Mesh stack event handler.
+ * This overrides the dummy weak implementation.
+ *
+ * @param[in] evt Event coming from the Bluetooth Mesh stack.
+ *****************************************************************************/
 void sl_btmesh_on_event(sl_btmesh_msg_t *evt) {
   uint16_t result = 0;
   uuid_128 provisionee_uuid;
@@ -265,7 +266,8 @@ void sl_btmesh_on_event(sl_btmesh_msg_t *evt) {
 
       // Move to configuration step
       sc = device_configuration_config_session(provisionee_addr,
-                                               target_group_address);
+                                               target_group_address,
+                                               device_type);
       app_assert_status_f(sc, "device_configuration_config_session\n");
       break;
     // -------------------------------

@@ -129,6 +129,8 @@ void DCD_decode_element(tsDCD_Elem *pElem, tsDCD_ElemContent *pDest) {
  */
 static uint16_t target_device_address = 0;
 static uint16_t target_group_address = 0;
+static uint8_t target_device_type = TARGET_DEVICE_TYPE_NODE;
+
 
 // Always start with element 0
 static uint8_t element_index = 0;
@@ -141,9 +143,11 @@ static uint8_t element_index = 0;
  * @return uint8_t
  */
 uint8_t device_configuration_config_session(uint16_t target_device,
-                                            uint16_t target_group) {
+                                            uint16_t target_group,
+                                            uint8_t device_type) {
   target_device_address = target_device;
   target_group_address = target_group;
+  target_device_type = device_type;
   app_log("The target address is %2x\n", target_device_address);
 
   return sl_btmesh_config_client_get_dcd(NETWORK_ID, target_device_address, 0,
@@ -212,7 +216,6 @@ static void config_bind_add(uint16_t model_id, uint16_t vendor_id) {
 
 // TODO Make this fucntion more flexible in stead of hard-coding
 
-uint8_t target_device_type = TARGET_DEVICE_TYPE_NODE;
 static void config_check() {
   uint8_t number_of_elem = 0;
   for (uint8_t i = 0; i < MAX_ELEMS_PER_DEV; i++) {
@@ -227,15 +230,32 @@ static void config_check() {
   if (target_device_type == TARGET_DEVICE_TYPE_NODE) {
     for (int i = 0; i < number_of_elem; i++) {
       for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
-        if (_sDCD_Table[i].SIG_models[j] == SWITCH_MODEL_ID) {
-          config_sub_add(SWITCH_MODEL_ID, 0xFFFF, target_group_address);
-          config_pub_add(SWITCH_MODEL_ID, 0xFFFF, target_group_address);
-          config_bind_add(SWITCH_MODEL_ID, 0xFFFF);
-        } else if (_sDCD_Table[i].SIG_models[j] == LIGHT_MODEL_ID) {
-          config_pub_add(LIGHT_MODEL_ID, 0xFFFF, target_group_address);
-          config_sub_add(LIGHT_MODEL_ID, 0xFFFF, target_group_address);
-          config_bind_add(LIGHT_MODEL_ID, 0xFFFF);
-        }
+        config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
+        config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                       target_group_address);
+        config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                       target_group_address);
+      }
+    }
+  } else if (target_device_type == TARGET_DEVICE_TYPE_GATEWAY) {
+    target_device_address = LIGHT_GROUP_1;
+    for (int i = 0; i < number_of_elem; i++) {
+      for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
+        config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
+        config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                       target_group_address);
+        config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                       target_group_address);
+      }
+    }
+    target_device_address = LIGHT_GROUP_2;
+    for (int i = 0; i < number_of_elem; i++) {
+      for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
+        config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
+        config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                       target_group_address);
+        config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                       target_group_address);
       }
     }
   }

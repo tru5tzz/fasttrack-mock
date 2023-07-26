@@ -7,10 +7,13 @@
 
 #define MAX_PRESENT_DEVICE_NUMBER 24
 
+#define DEVICE_FAMILY_CODE 0x02FF
+
 typedef struct device_entry {
   uuid_128 uuid;
   bd_addr add;
   int lifetime;
+  uint8_t same_family;
 } device_entry_t;
 
 typedef struct device_manager {
@@ -62,6 +65,10 @@ uint8_t device_manager_add_device(uuid_128 *devUUID, bd_addr *devAddr) {
       memcpy(&manager_instance.device_table[i].add, devAddr, sizeof(bd_addr));
       manager_instance.present_devices++;
       manager_instance.device_table[i].lifetime = 1;
+
+      if (devUUID->data[0] == 0x02 && devUUID->data[1] == 0xFF) {
+        manager_instance.device_table[i].same_family = 0;
+      }
       app_log("Add sucessfully, ble address of %x:%x:%x:%x:%x:%x\n",
               manager_instance.device_table[i].add.addr[5],
               manager_instance.device_table[i].add.addr[4],
@@ -90,7 +97,8 @@ uint8_t device_manager_remove_device(const bd_addr *devAddr) {
 
 uint8_t device_manager_get_next_device(uuid_128 *id, bd_addr *add) {
   for (uint8_t i = 0; i < MAX_PRESENT_DEVICE_NUMBER; i++) {
-    if (manager_instance.device_table[i].lifetime > 0) {
+    if (manager_instance.device_table[i].lifetime > 0 &&
+        manager_instance.device_table[i].same_family == 1) {
       *id = manager_instance.device_table[i].uuid;
       *add = manager_instance.device_table[i].add;
       return DEVICE_MANAGER_SUCCESS;
