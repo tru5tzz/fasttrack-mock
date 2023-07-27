@@ -60,7 +60,7 @@ GNU*/
 vscode-build/
 gecko_sdk*/
 autogen/
-config/
+#config/
 
 # Some unimportant files
 readme_img*.*
