@@ -62,8 +62,8 @@ vscode-build/
 # Some unimportant files
 readme_img*.*
 vscode.conf
-.projectlinkstore
-.*project
+#.projectlinkstore
+#.*project
 #*.bat
 #*.sh
 #*.pintool
