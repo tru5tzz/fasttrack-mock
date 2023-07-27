@@ -52,8 +52,8 @@ Mkfile.old
 dkms.conf
 
 # User defined folders
-.uceditor/
-.pdm/
+#.uceditor/
+#.pdm/
 .vscode/
 .trash/
 GNU*/
