@@ -64,7 +64,7 @@ readme_img*.*
 vscode.conf
 .projectlinkstore
 .*project
-*.bat
-*.sh
-*.pintool
-*.sl*
+#*.bat
+#*.sh
+#*.pintool
+#*.sl*
