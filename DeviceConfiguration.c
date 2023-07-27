@@ -131,7 +131,6 @@ static uint16_t target_device_address = 0;
 static uint16_t target_group_address = 0;
 static uint8_t target_device_type = TARGET_DEVICE_TYPE_NODE;
 
-
 // Always start with element 0
 static uint8_t element_index = 0;
 
@@ -230,32 +229,38 @@ static void config_check() {
   if (target_device_type == TARGET_DEVICE_TYPE_NODE) {
     for (int i = 0; i < number_of_elem; i++) {
       for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
-        config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
-        config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
-                       target_group_address);
-        config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
-                       target_group_address);
+        if (_sDCD_Table[i].SIG_models[j] != 0x0000) {
+          config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
+          config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                         target_group_address);
+          config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                         target_group_address);
+        }
       }
     }
   } else if (target_device_type == TARGET_DEVICE_TYPE_GATEWAY) {
     target_device_address = LIGHT_GROUP_1;
     for (int i = 0; i < number_of_elem; i++) {
       for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
-        config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
-        config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
-                       target_group_address);
-        config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
-                       target_group_address);
+        if (_sDCD_Table[i].SIG_models[j] != 0x0000) {
+          config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
+          config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                         target_group_address);
+          config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                         target_group_address);
+        }
       }
     }
     target_device_address = LIGHT_GROUP_2;
     for (int i = 0; i < number_of_elem; i++) {
       for (int j = 0; j < _sDCD_Table[i].numSIGModels; j++) {
-        config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
-        config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
-                       target_group_address);
-        config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
-                       target_group_address);
+        if (_sDCD_Table[i].SIG_models[j] != 0x0000) {
+          config_bind_add(_sDCD_Table[i].SIG_models[j], 0xFFFF);
+          config_pub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                         target_group_address);
+          config_sub_add(_sDCD_Table[i].SIG_models[j], 0xFFFF,
+                         target_group_address);
+        }
       }
     }
   }
@@ -291,6 +296,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
       model_id = _sConfig.bind_model[_sConfig.num_bind_done].model_id;
       vendor_id = _sConfig.bind_model[_sConfig.num_bind_done].vendor_id;
 
+      app_log("Binding appkey index %x to model ID %x", APPKEY_INDEX, model_id);
       retval = sl_btmesh_config_client_bind_model(
           NETWORK_ID, target_device_address, element_index, vendor_id, model_id,
           APPKEY_INDEX, NULL);
@@ -423,6 +429,7 @@ void device_config_handle_mesh_evt(sl_btmesh_msg_t *evt) {
           }
         } else {
           app_log("***\r\nconfiguration complete\r\n***\r\n");
+          _dcd_raw_len = 0;
           device_config_configuration_on_success_callback();
         }
       } else {

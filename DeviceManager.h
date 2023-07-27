@@ -50,4 +50,10 @@ uint8_t device_manager_get_next_device(uuid_128 *id, bd_addr *add);
  * @return uint8_t Status code defined above
  */
 uint8_t device_manager_get_device_count(uint8_t *count);
+
+/**
+ * @brief Print out the list of the beaconing device within the same family
+ * 
+ */
+void device_manager_print_list(void);
 #endif  // __DEVICE_MAN__

@@ -380,6 +380,7 @@ void app_button_press_cb(uint8_t button, uint8_t duration) {
 }
 
 void device_config_configuration_on_success_callback() {
+  device_manager_print_list();
   if (recursive > 0) {
     provisionBLEMeshStack_app();
   }

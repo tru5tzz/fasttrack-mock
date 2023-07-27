@@ -67,7 +67,7 @@ uint8_t device_manager_add_device(uuid_128 *devUUID, bd_addr *devAddr) {
       manager_instance.device_table[i].lifetime = 1;
 
       if (devUUID->data[0] == 0x02 && devUUID->data[1] == 0xFF) {
-        manager_instance.device_table[i].same_family = 0;
+        manager_instance.device_table[i].same_family = 1;
       }
       app_log("Add sucessfully, ble address of %x:%x:%x:%x:%x:%x\n",
               manager_instance.device_table[i].add.addr[5],
@@ -112,4 +112,18 @@ uint8_t device_manager_get_device_count(uint8_t *count) {
   *count = manager_instance.present_devices;
 
   return DEVICE_MANAGER_SUCCESS;
+}
+
+void device_manager_print_list(void) {
+  uint8_t present_devices = manager_instance.present_devices;
+  app_log("Devices available for provisioning:\n");
+  for (uint8_t i = 0; i < MAX_PRESENT_DEVICE_NUMBER; i++) {
+    if (manager_instance.device_table[i].lifetime > 0 &&
+        manager_instance.device_table[i].same_family > 0) {
+      app_log("BLE Address: %x:%x:%x\n",
+              manager_instance.device_table[i].add.addr[5],
+              manager_instance.device_table[i].add.addr[4],
+              manager_instance.device_table[i].add.addr[3]);
+    }
+  }
 }
