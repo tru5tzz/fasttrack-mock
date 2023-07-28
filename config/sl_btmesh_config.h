@@ -55,7 +55,7 @@
 // <i> Define the number of provisioning sessions the application needs.
 // <i> For a node the value is 1 or 2  (depending on whether Unprovisioned Device Beaconing is initiated by 1 or 2 Bearers).
 // <i> For a provisioner the value may be over 2.
-#define SL_BTMESH_CONFIG_MAX_PROV_SESSIONS       1
+#define SL_BTMESH_CONFIG_MAX_PROV_SESSIONS       (2)
 
 // <o SL_BTMESH_CONFIG_MAX_PROV_BEARERS> Maximum number of provisioning bearers allowed
 // <i> Default: 2
@@ -96,7 +96,7 @@
 // <o SL_BTMESH_CONFIG_MAX_FOUNDATION_CLIENT_CMDS> Maximum number of Client Commands for the Foundation Model
 // <i> Default: 0
 // <i> Define the maximum number of Client Commands for the Foundation Model. Only applicable for Provisioner.
-#define SL_BTMESH_CONFIG_MAX_FOUNDATION_CLIENT_CMDS       1
+#define SL_BTMESH_CONFIG_MAX_FOUNDATION_CLIENT_CMDS       (0)
 
 // <o SL_BTMESH_CONFIG_MAX_FRIENDSHIPS> Maximum number of Friendships allowed
 // <i> Default: 1

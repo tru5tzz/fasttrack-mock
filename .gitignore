@@ -52,19 +52,22 @@ Mkfile.old
 dkms.conf
 
 # User defined folders
-.uceditor/
-.pdm/
+#.uceditor/
+#.pdm/
 .vscode/
 .trash/
 GNU*/
 vscode-build/
+gecko_sdk*/
+autogen/
+#config/
 
 # Some unimportant files
 readme_img*.*
 vscode.conf
-.projectlinkstore
-.*project
-*.bat
-*.sh
-*.pintool
-*.sl*
+#.projectlinkstore
+#.*project
+#*.bat
+#*.sh
+#*.pintool
+#*.sl*
